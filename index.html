@@ -4,65 +4,27 @@
   <meta charset="UTF-8">
   <title>尋寶遊戲開始</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 40px;
-    }
-    .btn {
-      padding: 12px 20px;
-      background: #007bff;
-      color: white;
-      text-decoration: none;
-      border-radius: 6px;
-      display: inline-block;
-      margin: 10px;
-      font-size: 18px;
-      border: none;
-      cursor: pointer;
-    }
-    #qr-reader {
-      width: 300px;
-      margin: 20px auto;
-      display: none; 
-    }
-    .hint-card {
-      display: none;
-      width: 200px;
-      height: 200px;
-      border: 2px solid #333;
-      margin: 10px auto;
-      background: #fff;
-      padding: 10px;
-      cursor: pointer;
-      font-family: monospace;
-      white-space: pre;
-      font-size: 20px;
-      transition: transform 0.3s;
-    }
+    body { font-family: Arial; text-align:center; padding:40px; }
+    .btn { padding:12px 20px; background:#007bff; color:white; border-radius:6px; margin:10px; font-size:18px; border:none; cursor:pointer; }
+    #qr-reader { width:300px; margin:20px auto; display:none; }
+    .hint-card { display:none; width:200px; height:200px; border:2px solid #333; margin:10px auto; background:#fff; padding:10px; cursor:pointer; font-family:monospace; white-space:pre; font-size:20px; transition: transform 0.3s; }
   </style>
-  <!-- QR Scanner Library -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
 
 <h1>🎉 尋寶遊戲開始！</h1>
-<p>第一條提示：</p>
-<h2>「In a pair」</h2>
-<h2>「Different in Colour」</h2>
-<p>請選擇 Part 1 或 Part 2 開始，任意順序都可。</p>
+<p>第一條提示：「In a pair」 / 「Different in Colour」</p>
+<p>選擇 Part 1 或 Part 2 開始（必須掃描 QR 才能進入）</p>
 
-<!-- 開發用跳頁 -->
-<a class="btn" href="speakerA.html">Speaker A (問題關卡)</a>
-<a class="btn" href="speakerB.html">Speaker B (迷宮關卡)</a>
+<!-- QR 掃描按鈕 -->
+<button class="btn" onclick="startScan('speakerA.html')">📷 掃描 Speaker A QR</button>
+<button class="btn" onclick="startScan('speakerB.html')">📷 掃描 Speaker B QR</button>
 
 <br><br>
 
-<!-- 掃描 QR 按鈕 -->
-<button class="btn" id="scanBtn" onclick="startScan()">📷 掃描 QR Code</button>
 <div id="qr-reader"></div>
 
-<!-- 提示卡 -->
 <div>
   <div id="hintA" class="hint-card">XXXXX<br>XXXXX<br>XXXXX<br>XXXXX<br>XXXXX</div>
   <div id="hintB" class="hint-card">____5_<br>1_2___<br>_3___<br>__4__<br>____6</div>
@@ -72,57 +34,37 @@
 function updateHintCards() {
   if(localStorage.getItem('partA_done')) document.getElementById('hintA').style.display='block';
   if(localStorage.getItem('partB_done')) document.getElementById('hintB').style.display='block';
-  
-  // 顯示最終掃描提示
   if(localStorage.getItem('partA_done') && localStorage.getItem('partB_done')){
-    document.getElementById('scanBtn').textContent="📷 掃描最終答案";
+    document.getElementById('scanBtnFinal').style.display='inline-block';
   }
 }
 
-// 點擊提示卡放大縮小
+// 點擊提示卡放大/縮小
 document.querySelectorAll('.hint-card').forEach(card=>{
   card.addEventListener('click',()=>{
-    card.style.transform = (card.style.transform==='scale(1.5)')? 'scale(1)' : 'scale(1.5)';
+    card.style.transform=(card.style.transform==='scale(1.5)')?'scale(1)':'scale(1.5)';
   });
 });
 
 updateHintCards();
 
-// QR Scanner
-function startScan() {
+// QR 掃描函數
+function startScan(expectedURL) {
   document.getElementById("qr-reader").style.display = "block";
   const qrReader = new Html5Qrcode("qr-reader");
   qrReader.start(
     { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-    qrCodeMessage => {
-      qrReader.stop();
-      console.log("Scanned:", qrCodeMessage);
-
-      // 根據掃描內容判斷
-      if(qrCodeMessage.includes('speakerA.html')) {
-        localStorage.setItem('partA_done','true');
-        alert("已獲得 Part A 提示卡！");
-        updateHintCards();
-      }
-      else if(qrCodeMessage.includes('speakerB.html')) {
-        localStorage.setItem('partB_done','true');
-        alert("已獲得 Part B 提示卡！");
-        updateHintCards();
-      }
-      else if(qrCodeMessage.includes('gundam.html')) {
-        if(localStorage.getItem('partA_done') && localStorage.getItem('partB_done')){
-          window.location.href = qrCodeMessage;
-        } else {
-          alert("請先完成 Part A 和 Part B 才能掃描最終答案！");
-        }
+    { fps:10, qrbox:250 },
+    qrMessage=>{
+      if(qrMessage.includes(expectedURL)){
+        qrReader.stop();
+        alert("掃描成功！即將進入 " + expectedURL);
+        window.location.href = qrMessage;
       } else {
-        alert("未知 QR Code，請掃描遊戲內 QR");
+        alert("請掃描正確的 QR Code！");
       }
     },
-    errorMessage => {
-      // ignore scanning errors
-    }
+    errorMessage=>{}
   );
 }
 </script>
