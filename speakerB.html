@@ -2,122 +2,141 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Speaker Part 2 – 迷宮遊戲</title>
+<title>Speaker B</title>
 <style>
-  body {
-    font-family: Arial;
-    text-align: center;
-    padding: 20px;
-    background: #fafafa;
-  }
-  h1 {
-    margin-bottom: 10px;
-  }
-  #maze {
-    font-family: monospace;
-    font-size: 26px;
-    display: inline-block;
-    background: #fff;
-    padding: 10px;
-    border: 2px solid #333;
-    line-height: 30px;
-  }
-  .btn {
-    padding: 10px 20px;
-    font-size: 18px;
-    background: #007bff;
-    color: white;
-    border-radius: 6px;
-    text-decoration: none;
-    display: inline-block;
-    margin: 10px;
-  }
+body { font-family: Arial; text-align:center; padding:20px; background:#fafafa; }
+#maze { font-family: monospace; font-size:26px; display:inline-block; background:#fff; padding:10px; border:2px solid #333; line-height:30px;}
+.btn { padding:10px 20px; font-size:18px; background:#007bff; color:white; border:none; border-radius:6px; margin:10px; cursor:pointer; }
+#qr-reader { width:300px; margin:20px auto; display:none; }
+#scanResult { font-size:20px; margin-top:20px; white-space:pre-line; }
+.hint-card { width:200px; height:200px; border:2px solid #333; margin:10px auto; background:#fff; padding:10px; cursor:pointer; font-family:monospace; white-space:pre; font-size:20px; display:none; }
 </style>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
-
-<h1>🔊 Speaker Part 2：迷宮</h1>
-<p>帶住「🟦 你自己」行到「🏁 出口」！</p>
-<p>過到關 = 取得下一個提示卡</p>
-
+<h1>🔊 Speaker B：迷宮</h1>
+<p>在迷宮找到寶箱解鎖數字，拼出 GUNDAM</p>
 <pre id="maze"></pre>
 
-<a id="nextHint" class="btn" style="display:none;" href="finalHint.html">取得下一個提示 ➡</a>
+<button id="scanBtn" class="btn" style="display:none;" onclick="startScan()">📷 掃描下一個 QR Code</button>
+<div id="qr-reader"></div>
+<p id="scanResult"></p>
+
+<div id="hintCard" class="hint-card">
+____5_
+1_2___ 
+_3___ 
+__4__
+____6
+</div>
 
 <script>
-// 迷宮地圖 (W=牆, .=路, P=起點, E=終點)
-let mazeMap = [
-  "WWWWWWWWWW",
-  "WP....W..W",
-  "W.WW.W.W.W",
-  "W.W..W.W.W",
-  "W.WW.W.W.W",
-  "W....W...W",
-  "WWWWWWWEWW"
+// 5x5 迷宮
+let mazeMap=[
+  "WWWWW",
+  "W...W",
+  "W.W.W",
+  "W...W",
+  "WWWWW"
 ];
+let playerX=1, playerY=1;
+// 寶箱位置對應提示序號
+let chests=[
+  {x:3,y:1,num:5},
+  {x:1,y:1,num:1},
+  {x:2,y:1,num:2},
+  {x:2,y:2,num:3},
+  {x:3,y:3,num:4},
+  {x:4,y:3,num:6}
+];
+let found=[];
 
-let playerX = 1; 
-let playerY = 1;
-
-function drawMaze() {
-  let output = "";
-  for (let y = 0; y < mazeMap.length; y++) {
-    for (let x = 0; x < mazeMap[y].length; x++) {
-      if (x === playerX && y === playerY) {
-        output += "🟦"; // 玩家
-      } else {
-        let cell = mazeMap[y][x];
-        if (cell === "W") output += "⬛";
-        else if (cell === ".") output += "⬜";
-        else if (cell === "P") output += "🟢";
-        else if (cell === "E") output += "🏁";
+function drawMaze(){
+  let out="";
+  for(let y=0;y<mazeMap.length;y++){
+    for(let x=0;x<mazeMap[y].length;x++){
+      if(x===playerX && y===playerY) out+="🟦";
+      else{
+        let cell=mazeMap[y][x];
+        if(cell==="W") out+="⬛";
+        else out+="⬜";
+        chests.forEach(c=>{
+          if(c.x===x && c.y===y && !found.includes(c.num)) out+="📦";
+        });
       }
     }
-    output += "\n";
+    out+="\n";
   }
-  document.getElementById("maze").textContent = output;
+  document.getElementById("maze").textContent=out;
+  scanAround();
+  if(found.length===chests.length){
+    document.getElementById("hintCard").style.display="block";
+    localStorage.setItem('partB_done','true');
+    document.getElementById("scanBtn").style.display="inline-block";
+    alert("完成迷宮！已獲得 Part B 提示卡！");
+  }
 }
 
-function move(dx, dy) {
-  let nx = playerX + dx;
-  let ny = playerY + dy;
-
-  let cell = mazeMap[ny][nx];
-  if (cell === "W") return; // 撞牆
-  playerX = nx;
-  playerY = ny;
-
-  if (cell === "E") {
-    document.getElementById("nextHint").style.display = "block";
-    alert("成功過迷宮！你可以攞到下一個提示卡！");
-  }
-
+function move(dx,dy){
+  let nx=playerX+dx, ny=playerY+dy;
+  if(ny<0||ny>=mazeMap.length||nx<0||nx>=mazeMap[0].length) return;
+  if(mazeMap[ny][nx]==="W") return;
+  playerX=nx; playerY=ny;
+  chests.forEach(c=>{
+    if(c.x===playerX && c.y===playerY && !found.includes(c.num)){
+      found.push(c.num);
+      alert("找到寶箱！數字: "+c.num);
+    }
+  });
   drawMaze();
 }
 
-// 手機滑動方向
-let startX, startY;
+function scanAround(){
+  let dirs=[{n:"上",dx:0,dy:-1},{n:"下",dx:0,dy:1},{n:"左",dx:-1,dy:0},{n:"右",dx:1,dy:0}];
+  let res="掃描周圍:\n";
+  dirs.forEach(d=>{
+    let nx=playerX+d.dx, ny=playerY+d.dy;
+    if(ny<0||ny>=mazeMap.length||nx<0||nx>=mazeMap[0].length) res+=d.n+": ❌\n";
+    else res+=d.n+": "+(mazeMap[ny][nx]==="W"?"⬛":"⬜")+"\n";
+  });
+  document.getElementById("scanResult").textContent=res;
+}
 
-document.addEventListener("touchstart", e => {
-  startX = e.touches[0].clientX;
-  startY = e.touches[0].clientY;
+// 點擊提示卡放大縮小
+document.getElementById("hintCard").addEventListener('click',()=>{
+  const card=document.getElementById("hintCard");
+  card.style.transform=(card.style.transform==='scale(1.5)')? 'scale(1)': 'scale(1.5)';
 });
 
-document.addEventListener("touchend", e => {
-  let dx = e.changedTouches[0].clientX - startX;
-  let dy = e.changedTouches[0].clientY - startY;
+// QR Scanner
+function startScan(){
+  document.getElementById("qr-reader").style.display="block";
+  const qrReader = new Html5Qrcode("qr-reader");
+  qrReader.start(
+    {facingMode:"environment"},
+    {fps:10, qrbox:250},
+    qrMessage=>{
+      qrReader.stop();
+      if(qrMessage.includes('speakerA.html')) window.location.href=qrMessage;
+      else if(qrMessage.includes('gundam.html')){
+        if(localStorage.getItem('partA_done') && localStorage.getItem('partB_done')){
+          window.location.href=qrMessage;
+        } else alert("請先完成 Part A 和 Part B 才能掃描最終答案！");
+      }
+    }, error=>{}
+  );
+}
 
-  if (Math.abs(dx) > Math.abs(dy)) {
-    if (dx > 0) move(1, 0);  // 右
-    else move(-1, 0);        // 左
-  } else {
-    if (dy > 0) move(0, 1);  // 下
-    else move(0, -1);        // 上
-  }
+let startX,startY;
+document.addEventListener("touchstart",e=>{startX=e.touches[0].clientX; startY=e.touches[0].clientY;});
+document.addEventListener("touchend",e=>{
+  let dx=e.changedTouches[0].clientX-startX;
+  let dy=e.changedTouches[0].clientY-startY;
+  if(Math.abs(dx)>Math.abs(dy)){ if(dx>0) move(1,0); else move(-1,0);}
+  else{ if(dy>0) move(0,1); else move(0,-1);}
 });
 
 drawMaze();
 </script>
-
 </body>
 </html>

@@ -1,68 +1,112 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Speaker Part 1</title>
-  <style>
-    body { 
-      font-family: Arial; 
-      text-align: center; 
-      padding: 30px;
-    }
-    .question-block {
-      margin: 20px 0;
-      padding: 15px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Speaker A</title>
+<style>
+body { font-family: Arial; text-align:center; padding:30px; }
+.question-block { margin:20px 0; padding:15px; border:1px solid #ddd; border-radius:6px; }
+.btn { padding:12px 20px; background:#007bff; color:white; border:none; border-radius:6px; margin:10px; font-size:18px; cursor:pointer; }
+#qr-reader { width:300px; margin:20px auto; display:none; }
+.hint-card { width:200px; height:200px; border:2px solid #333; margin:10px auto; background:#fff; padding:10px; cursor:pointer; font-family:monospace; white-space:pre; font-size:20px; }
+</style>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
-  <h1>🔊 Speaker Part 1</h1>
-  <p>答啱越多，下一關嘅提示越清晰。</p>
 
-  <div id="questions"></div>
+<h1>🔊 Speaker A</h1>
+<p>完成問題以揭示 Part A 提示卡</p>
 
-  <a href="speakerB.html" style="font-size:20px; display:block; margin-top:40px;">➡ 去 Speaker Part 2</a>
+<div id="questions"></div>
 
-  <script>
-    const questions = [
-      { q: "Q1：你第一次送畀我嘅禮物係咩？", a: "XXX" },
-      { q: "Q2：我最鍾意食咩？", a: "XXX" },
-      { q: "Q3：我哋第一餐食咗咩？", a: "XXX" },
-      { q: "Q4：邊一個係我最鍾意嘅動漫？", a: "XXX" },
-      { q: "Q5：我最鍾意去邊度散步？", a: "XXX" }
-    ];
+<div id="hintCard" class="hint-card">
+XXXXX
+XXXXX
+XXXXX
+XXXXX
+XXXXX
+</div>
 
-    let correctCount = 0;
+<!-- 掃描按鈕 -->
+<button class="btn" id="scanBtn" onclick="startScan()">📷 掃描 Part B QR</button>
+<div id="qr-reader"></div>
 
-    const container = document.getElementById("questions");
+<script>
+// 5x5 提示卡
+const hintRows = [
+  "EICAP",
+  "GSUOV",
+  "HMBFL",
+  "JKDQW",
+  "FYRXN"
+];
 
-    questions.forEach((item, index) => {
-      const block = document.createElement("div");
-      block.className = "question-block";
-      block.innerHTML = `
-        <p><b>${item.q}</b></p>
-        <input id="ans${index}" placeholder="你的答案">
-        <button onclick="check(${index})">提交</button>
-        <p id="r${index}"></p>
-      `;
-      container.appendChild(block);
-    });
+const questions = [
+  {q:"Q1: 你第一次送畀我嘅禮物係咩？", a:"Gift"},
+  {q:"Q2: 我最鍾意食咩？", a:"Sushi"},
+  {q:"Q3: 我哋第一餐食咗咩？", a:"Pizza"},
+  {q:"Q4: 邊一個係我最鍾意嘅動漫？", a:"Gundam"},
+  {q:"Q5: 我最鍾意去邊度散步？", a:"Park"}
+];
 
-    function check(i) {
-      const userAns = document.getElementById("ans" + i).value.trim().toLowerCase();
-      const result = document.getElementById("r" + i);
+const container = document.getElementById("questions");
+let revealed = 0;
 
-      if (userAns === questions[i].a.toLowerCase()) {
-        result.innerHTML = "✔ 正確！";
-        result.style.color = "green";
-        correctCount++;
-      } else {
-        result.innerHTML = "❌ 錯喇～";
-        result.style.color = "red";
+questions.forEach((item,i)=>{
+  const block = document.createElement("div");
+  block.className="question-block";
+  block.innerHTML=`<p><b>${item.q}</b></p>
+                   <input id="ans${i}" placeholder="你的答案">
+                   <button onclick="check(${i})">提交</button>
+                   <p id="r${i}"></p>`;
+  container.appendChild(block);
+});
+
+function check(i){
+  const userAns=document.getElementById("ans"+i).value.trim().toLowerCase();
+  const result=document.getElementById("r"+i);
+  if(userAns===questions[i].a.toLowerCase()){
+    result.innerHTML="✔ 正確！"; result.style.color="green";
+    if(revealed<i+1){ revealed=i+1; updateHintCard(); }
+  } else {
+    result.innerHTML="❌ 錯喇～"; result.style.color="red";
+  }
+}
+
+function updateHintCard(){
+  let display="";
+  for(let i=0;i<5;i++){
+    display += (i<revealed)? hintRows[i].split('').join('') : 'XXXXX';
+    display += "\n";
+  }
+  document.getElementById("hintCard").textContent = display;
+  // 自動存 Part A 完成
+  if(revealed===questions.length) localStorage.setItem('partA_done','true');
+}
+
+// 點擊提示卡放大縮小
+document.getElementById("hintCard").addEventListener('click',()=>{
+  const card = document.getElementById("hintCard");
+  card.style.transform = (card.style.transform==='scale(1.5)')? 'scale(1)': 'scale(1.5)';
+});
+
+// QR Scanner
+function startScan(){
+  document.getElementById("qr-reader").style.display="block";
+  const qrReader = new Html5Qrcode("qr-reader");
+  qrReader.start(
+    {facingMode:"environment"},
+    {fps:10, qrbox:250},
+    qrMessage=>{
+      qrReader.stop();
+      if(qrMessage.includes('speakerB.html')){
+        localStorage.setItem('partB_done','true');
+        window.location.href=qrMessage;
       }
-    }
-  </script>
+    }, error=>{}
+  );
+}
+
+</script>
 </body>
 </html>
