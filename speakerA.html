@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Speaker Part 1</title>
+  <style>
+    body { 
+      font-family: Arial; 
+      text-align: center; 
+      padding: 30px;
+    }
+    .question-block {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔊 Speaker Part 1</h1>
+  <p>答啱越多，下一關嘅提示越清晰。</p>
+
+  <div id="questions"></div>
+
+  <a href="speakerB.html" style="font-size:20px; display:block; margin-top:40px;">➡ 去 Speaker Part 2</a>
+
+  <script>
+    const questions = [
+      { q: "Q1：你第一次送畀我嘅禮物係咩？", a: "XXX" },
+      { q: "Q2：我最鍾意食咩？", a: "XXX" },
+      { q: "Q3：我哋第一餐食咗咩？", a: "XXX" },
+      { q: "Q4：邊一個係我最鍾意嘅動漫？", a: "XXX" },
+      { q: "Q5：我最鍾意去邊度散步？", a: "XXX" }
+    ];
+
+    let correctCount = 0;
+
+    const container = document.getElementById("questions");
+
+    questions.forEach((item, index) => {
+      const block = document.createElement("div");
+      block.className = "question-block";
+      block.innerHTML = `
+        <p><b>${item.q}</b></p>
+        <input id="ans${index}" placeholder="你的答案">
+        <button onclick="check(${index})">提交</button>
+        <p id="r${index}"></p>
+      `;
+      container.appendChild(block);
+    });
+
+    function check(i) {
+      const userAns = document.getElementById("ans" + i).value.trim().toLowerCase();
+      const result = document.getElementById("r" + i);
+
+      if (userAns === questions[i].a.toLowerCase()) {
+        result.innerHTML = "✔ 正確！";
+        result.style.color = "green";
+        correctCount++;
+      } else {
+        result.innerHTML = "❌ 錯喇～";
+        result.style.color = "red";
+      }
+    }
+  </script>
+</body>
+</html>
